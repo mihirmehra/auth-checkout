@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import Head from 'next/head';
+import Script from 'next/script'; // Import Script component
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
@@ -25,10 +26,15 @@ export default function CheckoutPage() {
 
   const handlePayment = (e) => {
     e.preventDefault();
+
+    if (typeof window.Accept === 'undefined' || typeof window.Accept.dispatchData !== 'function') {
+      setMessage('Payment libraries are not fully loaded. Please wait and try again.');
+      return;
+    }
+
     setIsProcessing(true);
     setMessage('Processing your payment...');
 
-    // The Accept.js library is now guaranteed to be available
     var authData = {
       clientKey: process.env.NEXT_PUBLIC_AUTHORIZENET_CLIENT_KEY,
       apiLoginID: process.env.NEXT_PUBLIC_AUTHORIZENET_API_LOGIN_ID,
@@ -45,7 +51,6 @@ export default function CheckoutPage() {
       cardData: cardData
     };
     
-    // Call the dispatchData function directly
     window.Accept.dispatchData(authData, secureData, responseHandler);
   };
 
@@ -79,6 +84,16 @@ export default function CheckoutPage() {
         <title>Checkout - Authorize.net</title>
       </Head>
       
+      {/* Load AcceptCore.js and then Accept.js with the afterInteractive strategy */}
+      <Script 
+        src="https://jstest.authorize.net/v1/AcceptCore.js" 
+        strategy="afterInteractive" 
+      />
+      <Script 
+        src="https://jstest.authorize.net/v1/Accept.js" 
+        strategy="afterInteractive" 
+      />
+
       <div className="container">
         <h1>Custom Authorize.net Checkout</h1>
         <form onSubmit={handlePayment}>
