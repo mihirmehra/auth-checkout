@@ -28,7 +28,7 @@ export default function CheckoutPage() {
   const handlePayment = (e) => {
     e.preventDefault();
 
-    if (!isAcceptJsLoaded) {
+    if (!isAcceptJsLoaded || !window.Accept) {
       setMessage('Payment libraries are still loading. Please wait a moment.');
       return;
     }
@@ -54,6 +54,7 @@ export default function CheckoutPage() {
     
     window.Accept.dispatchData(authData, secureData, responseHandler);
   };
+
 
   const responseHandler = (response) => {
     setIsProcessing(false);
@@ -92,9 +93,22 @@ export default function CheckoutPage() {
       />
       <Script 
         src="https://jstest.authorize.net/v1/Accept.js" 
-        strategy="beforeInteractive" 
-        onLoad={() => setIsAcceptJsLoaded(true)} // Set state when loaded
+        strategy="afterInteractive" 
+        onLoad={() => {
+          if (window.Accept) {
+            setIsAcceptJsLoaded(true);
+          } else {
+            const interval = setInterval(() => {
+              if (window.Accept) {
+                setIsAcceptJsLoaded(true);
+                clearInterval(interval);
+              }
+            }, 50);
+            setTimeout(() => clearInterval(interval), 5000);
+          }
+        }}
       />
+
 
       <div className="container">
         <h1>Custom Authorize.net Checkout</h1>
