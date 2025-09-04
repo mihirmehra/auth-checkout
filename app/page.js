@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Head from 'next/head';
-import Script from 'next/script'; // Import Script component
+import Script from 'next/script';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
@@ -17,6 +17,7 @@ export default function CheckoutPage() {
   });
   const [message, setMessage] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isAcceptJsLoaded, setIsAcceptJsLoaded] = useState(false); // New state to track script loading
   const router = useRouter();
 
   const handleInputChange = (e) => {
@@ -26,15 +27,15 @@ export default function CheckoutPage() {
 
   const handlePayment = (e) => {
     e.preventDefault();
-    setIsProcessing(true);
-    setMessage('Processing your payment...');
 
-    if (typeof window.Accept === 'undefined' || typeof window.AcceptCore === 'undefined') {
-      setMessage('Payment libraries not loaded. Please try refreshing the page.');
-      setIsProcessing(false);
+    if (!isAcceptJsLoaded) {
+      setMessage('Payment libraries are still loading. Please wait a moment.');
       return;
     }
     
+    setIsProcessing(true);
+    setMessage('Processing your payment...');
+
     var authData = {
       clientKey: process.env.NEXT_PUBLIC_AUTHORIZENET_CLIENT_KEY,
       apiLoginID: process.env.NEXT_PUBLIC_AUTHORIZENET_API_LOGIN_ID,
@@ -51,12 +52,11 @@ export default function CheckoutPage() {
       cardData: cardData
     };
     
-    // Call the dispatchData function directly
     window.Accept.dispatchData(authData, secureData, responseHandler);
   };
 
   const responseHandler = (response) => {
-    setIsProcessing(false); // Stop loading indicator
+    setIsProcessing(false);
     if (response.messages.resultCode === "Error") {
       const errorMsg = response.messages.message[0].text;
       setMessage(`Error: ${errorMsg}`);
@@ -85,7 +85,7 @@ export default function CheckoutPage() {
         <title>Checkout - Authorize.net</title>
       </Head>
       
-      {/* Load AcceptCore.js first, then Accept.js */}
+      {/* Load AcceptCore.js and then Accept.js. Use onLoad to know when it's ready. */}
       <Script 
         src="https://jstest.authorize.net/v1/AcceptCore.js" 
         strategy="beforeInteractive" 
@@ -93,12 +93,12 @@ export default function CheckoutPage() {
       <Script 
         src="https://jstest.authorize.net/v1/Accept.js" 
         strategy="beforeInteractive" 
+        onLoad={() => setIsAcceptJsLoaded(true)} // Set state when loaded
       />
 
       <div className="container">
         <h1>Custom Authorize.net Checkout</h1>
         <form onSubmit={handlePayment}>
-          {/* Form fields */}
           <div>
             <label htmlFor="cardNumber">Card Number</label>
             <input
@@ -159,8 +159,8 @@ export default function CheckoutPage() {
               required
             />
           </div>
-          <button type="submit" disabled={isProcessing}>
-            {isProcessing ? 'Processing...' : 'Pay Now'}
+          <button type="submit" disabled={isProcessing || !isAcceptJsLoaded}>
+            {isProcessing ? 'Processing...' : (isAcceptJsLoaded ? 'Pay Now' : 'Loading...')}
           </button>
         </form>
         {message && <p className="message">{message}</p>}
