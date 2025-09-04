@@ -3,7 +3,6 @@
 
 import { useState } from 'react';
 import Head from 'next/head';
-import Script from 'next/script'; // Import Script component
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
@@ -29,13 +28,7 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     setMessage('Processing your payment...');
 
-    // Access the global 'Accept' object directly from the window
-    if (typeof window.Accept === 'undefined' || typeof window.Accept.dispatchData !== 'function') {
-      setMessage('Payment libraries are not fully loaded. Please wait and try again.');
-      setIsProcessing(false);
-      return;
-    }
-    
+    // The Accept.js library is now guaranteed to be available
     var authData = {
       clientKey: process.env.NEXT_PUBLIC_AUTHORIZENET_CLIENT_KEY,
       apiLoginID: process.env.NEXT_PUBLIC_AUTHORIZENET_API_LOGIN_ID,
@@ -57,7 +50,7 @@ export default function CheckoutPage() {
   };
 
   const responseHandler = (response) => {
-    setIsProcessing(false); // Stop loading indicator
+    setIsProcessing(false);
     if (response.messages.resultCode === "Error") {
       const errorMsg = response.messages.message[0].text;
       setMessage(`Error: ${errorMsg}`);
@@ -86,16 +79,6 @@ export default function CheckoutPage() {
         <title>Checkout - Authorize.net</title>
       </Head>
       
-      {/* Load AcceptCore.js and then Accept.js in the correct order */}
-      <Script 
-        src="https://jstest.authorize.net/v1/AcceptCore.js" 
-        strategy="beforeInteractive" 
-      />
-      <Script 
-        src="https://jstest.authorize.net/v1/Accept.js" 
-        strategy="beforeInteractive" 
-      />
-
       <div className="container">
         <h1>Custom Authorize.net Checkout</h1>
         <form onSubmit={handlePayment}>
