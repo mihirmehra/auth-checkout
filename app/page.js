@@ -29,14 +29,12 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     setMessage('Processing your payment...');
 
-    // The Accept.js library should be loaded by the <Script> component.
-    // Ensure the `window.Accept` object exists before proceeding.
-    if (typeof window.Accept === 'undefined') {
-      setMessage('Accept.js not loaded. Please try again.');
+    if (typeof window.Accept === 'undefined' || typeof window.AcceptCore === 'undefined') {
+      setMessage('Payment libraries not loaded. Please try refreshing the page.');
       setIsProcessing(false);
       return;
     }
-
+    
     var authData = {
       clientKey: process.env.NEXT_PUBLIC_AUTHORIZENET_CLIENT_KEY,
       apiLoginID: process.env.NEXT_PUBLIC_AUTHORIZENET_API_LOGIN_ID,
@@ -87,7 +85,11 @@ export default function CheckoutPage() {
         <title>Checkout - Authorize.net</title>
       </Head>
       
-      {/* Use Next.js Script component to load Accept.js */}
+      {/* Load AcceptCore.js first, then Accept.js */}
+      <Script 
+        src="https://jstest.authorize.net/v1/AcceptCore.js" 
+        strategy="beforeInteractive" 
+      />
       <Script 
         src="https://jstest.authorize.net/v1/Accept.js" 
         strategy="beforeInteractive" 
